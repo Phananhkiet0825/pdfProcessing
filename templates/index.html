@@ -1,0 +1,326 @@
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5em;
+    font-size: 13px;
+  }
+
+  .logo-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 15px;
+  }
+
+  .logo-container img {
+    width: 100px;
+    margin-bottom: 6px;
+  }
+
+  .logo-container h1 {
+    font-size: 18px;
+    margin: 0;
+    color: #333;
+  }
+
+  form {
+    margin-bottom: 15px;
+    text-align: center;
+  }
+
+  input[type="file"],
+  input[type="submit"] {
+    padding: 8px 16px;
+    font-size: 13px;
+    border-radius: 6px;
+  }
+
+  input[type="submit"] {
+    background: #007BFF;
+    color: #fff;
+    border: none;
+  }
+
+  input[type="submit"]:hover {
+    background: #0056b3;
+  }
+
+  .container {
+    display: flex;
+    gap: 15px;
+    max-width: 1000px;
+    width: 100%;
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-bottom: 20px;
+    background: #fff;
+    border-radius: 8px;
+  }
+
+  /* make PDF area bigger */
+  .pdf-view {
+    flex: 2;
+    /* was 1 */
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    overflow: hidden;
+    height: 750px;
+    /* taller viewer */
+  }
+
+  /* info panel shrinks slightly */
+  .info-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+  }
+
+  /* smaller marks image */
+  .marks-image {
+    max-width: 200px;
+    /* force small image width */
+    max-height: 120px;
+    /* limit height */
+    object-fit: contain;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-top: 6px;
+  }
+
+  .field-label {
+    display: inline-block;
+    font-weight: 600;
+    color: #333;
+    font-size: 11px;
+    margin-right: 4px;
+    white-space: nowrap;
+  }
+
+  .card {
+    border: 1px solid #ccc;
+    padding: 6px 8px;
+    border-radius: 6px;
+    background: #fafafa;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    line-height: 1.3;
+    font-size: 11px;
+  }
+
+  .scroll-text {
+    max-height: 100px;
+    overflow-y: auto;
+    padding: 6px;
+    border: 1px solid #ddd;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+    white-space: pre-wrap;
+  }
+
+  .scroll-text1 {
+    max-height: 40px;
+    overflow-y: auto;
+    padding: 6px;
+    border: 1px solid #ddd;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #f1f1f1;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #888;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+
+  .quoc-hieu {
+    padding: 10px;
+    line-height: 1.5;
+  }
+
+  /* Line 1 — label + title on the same line */
+  .quoc-hieu .line1 {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 5px;
+    /* space between label and title */
+  }
+
+  /* Label */
+  .qh-label {
+    font-weight: bold;
+  }
+
+  /* Title — stays on the same line */
+  .qh-title {
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+
+  /* Line 2 — motto centered under the title */
+  .quoc-hieu .line2 {
+    text-align: center;
+    /* center motto */
+    margin-right: 100px;
+    /* indent motto to start after “Quốc hiệu:” */
+    display: block;
+  }
+</style>
+
+<body>
+
+  <!-- Logo -->
+  <div class="logo-container">
+    <img src="{{ url_for('static', filename='logo.png') }}" alt="Vietnamese Legal Document Extractor Logo">
+    <h1>Vietnamese Legal Document Extractor</h1>
+  </div>
+
+  <!-- Upload form -->
+  <form method="POST" enctype="multipart/form-data">
+    <input type="file" name="file" accept=".pdf" multiple required>
+    <input type="submit" value="Upload PDFs and Extract Info">
+  </form>
+
+  <!-- Semantic Search -->
+  <form method="POST" action="/semantic-search" style="margin-top:20px;">
+    <input type="text" name="query" placeholder="Nhập nội dung cần tìm..." style="width:300px;padding:6px;">
+    <input type="submit" value="Semantic Search">
+  </form>
+
+
+  <!-- ======================= -->
+  <!-- SEMANTIC SEARCH RESULTS -->
+  <!-- ======================= -->
+  {% if search_results %}
+  <div style="max-width:1000px;width:100%;margin:30px auto;">
+    <h3>Semantic Search</h3>
+
+    {% for r in search_results %}
+    <div
+      style="background:#fff;padding:20px;margin-bottom:25px;border-radius:10px;box-shadow:0 3px 10px rgba(0,0,0,0.06);">
+
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <b>Score:</b> {{ "%.4f"|format(r.score) }}
+        </div>
+
+        <button onclick="togglePDF('{{ url_for('view_pdf', filename=r.metadata.file) }}','pdf_{{ loop.index }}')"
+          style="padding:8px 14px;background:#007bff;color:white;border:none;border-radius:6px;cursor:pointer;">
+          📄 View PDF file
+        </button>
+      </div>
+
+      <div style="margin-top:10px;">
+        <b>File:</b> {{ r.metadata.file }}
+      </div>
+
+      <div class="scroll-text" style="margin-top:10px;">
+        {{ r.text }}
+      </div>
+
+      <!-- PDF VIEWER riêng cho từng kết quả -->
+      <div id="pdf_{{ loop.index }}" style="display:none;margin-top:15px;">
+        <iframe style="width:100%;height:750px;border:1px solid #ccc;border-radius:8px;">
+        </iframe>
+      </div>
+
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+
+  <!-- ======================= -->
+  <!-- PDF DATA DISPLAY (UPLOAD PART) -->
+  <!-- ======================= -->
+  {% if data_list %}
+  {% for data in data_list %}
+  <div class="container">
+
+    {% if data.pdf_filename %}
+    <div class="pdf-view">
+      <iframe src="{{ url_for('uploaded_file', filename=data.pdf_filename) }}" width="100%" height="100%">
+      </iframe>
+    </div>
+    {% endif %}
+
+    <div class="info-panel">
+
+      <div class="card quoc-hieu">
+        <div class="line1">
+          <span class="qh-label">Quốc hiệu:</span>
+          <span class="qh-title">{{ data.qh }}</span>
+        </div>
+        <div class="line2">{{ data.tn }}</div>
+      </div>
+
+      <div class="card"><span class="field-label">Cơ quan ban hành:</span> {{ data.cqbh }}</div>
+      <div class="card"><span class="field-label">Ký hiệu văn bản:</span> {{ data.shvb }}</div>
+      <div class="card"><span class="field-label">Ngày ban hành:</span> {{ data.ngay_ban_hanh }}</div>
+      <div class="card"><span class="field-label">Loại văn bản:</span> {{ data.lvb }}</div>
+      <div class="card"><span class="field-label">Trích yếu nội dung:</span> {{ data.td }}</div>
+
+      <div class="card">
+        <span class="field-label">Nội dung chính:</span>
+        <div class="scroll-text">{{ data.detail }}</div>
+      </div>
+
+      <div class="card">
+        <span class="field-label">Nơi nhận:</span>
+        <div class="scroll-text1">{{ data.noi_nhan }}</div>
+      </div>
+
+      <div class="card">
+        <span class="field-label">Người ký văn bản:</span> {{ data.nguoi_ky }}
+      </div>
+
+      {% if data.marks_image %}
+      <div style="margin-top:8px;">
+        <span class="field-label">Dấu & chữ ký:</span><br>
+        <img src="{{ url_for('marks_file', filename=data.marks_image) }}" alt="Dấu và chữ ký" class="marks-image">
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+
+  <!-- ======================= -->
+  <!-- JAVASCRIPT -->
+  <!-- ======================= -->
+  <script>
+    function togglePDF(url, containerId) {
+
+      let container = document.getElementById(containerId);
+      let iframe = container.querySelector("iframe");
+
+      if (container.style.display === "none") {
+
+        iframe.src = url;
+        container.style.display = "block";
+
+      } else {
+
+        container.style.display = "none";
+        iframe.src = "";
+      }
+    }
+  </script>
+
+</body>
